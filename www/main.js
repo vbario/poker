@@ -62,7 +62,10 @@ $(document).ready(function(){
 		}, 1000);
 	});
 
-	client.on('prompt', updateCmds);
+	client.on('prompt', function(a) {
+		console.log('CMDS4', a)
+		updateCmds(a, a.raise)
+	});
 	
 	client.on('shout', function(ret){
 		addMsg(ret.who.name + _T_('shout:') + ret.msg);
@@ -73,6 +76,7 @@ $(document).ready(function(){
 	});
 	
 	client.on('refresh', function(ret){
+		console.log('**REFRESH**', a)
 		showRoom(client.room);
 	});
 	
@@ -161,7 +165,9 @@ $(document).ready(function(){
 	});
 	
 	client.on('countdown', function(ret){
-		addMsg(_T('count down:') + ret.seat + ', ' + ret.sec);
+		if (ret.sec % 30 == 0) {
+			addMsg(_T('count down:') + ret.seat + ', ' + ret.sec);
+		}
 	});
 	
 	client.on('fold', function(ret){
@@ -362,22 +368,49 @@ function onDialogOKClicked(e) {
 	}
 }
 
-function updateCmds( cmds ){
+function updateCmds( cmds, raiseRange ){
+	$('#cmd2').empty();
+	$('#chat').empty();
+	$('#raise-wrap').empty();
+	// $('#account-actions').empty();
+	// $('#table-actions').empty();
+	$('#hand-actions').empty();
+
+	raiseRange = raiseRange || ''
+	var index1 = raiseRange.indexOf(',')
+	var index2 = raiseRange.lastIndexOf(',')
+	var raiseRangeText = raiseRange.substring(index1 + 1, index2)
+
 	var v, div, btn, words, label, input;
 	for(var k in cmds) {
 		v = cmds[ k ];
 		if(v === null) {
 			$('div#'+k).remove();
 			$('button#'+k).remove();
-			
 		} else if(v === true) {
 			btn = $('<button>').text(_T(k)).attr('id', k).attr('arg', 0).addClass('cmd');
 			$('#cmds').append(btn);
+			if (k == 'games' || k == 'logout') {
+				$('#account-actions').append(btn);
+			} else if (k == 'leave' || k == 'unseat') {
+				$('#table-actions').append(btn);
+			} else {
+				// console.log('call amount', callAmount)
+				// if (k = 'call') {
+				// 	var text = btn.text()
+				// 	text = text + ' ' + callAmount
+				// 	btn.text(text)
+				// }
+				if (k == 'call') {
+					btn.text('Call: ' + raiseRangeText)
+				} 
+				$('#hand-actions').append(btn);
+			}
 			btn.on('click', onBtnClicked);
-			
 		} else if(typeof v === 'string') {
 			div = $('<div>').attr('id',k).addClass('cmd');
 			$('#cmds').append(div);
+
 			input = $('<input>').attr('id', k).addClass('cmd');
 			words = v.split(',');
 			switch(words[0]) {
@@ -402,21 +435,41 @@ function updateCmds( cmds ){
 				input.attr('type', 'text').attr('size',40);
 				break;
 			}
+			// console.log('input', input)
+			// $('#game-selection').append(input);
 			div.append(input);
 			btn = $('<button>').text(_T(k)).attr('id', k).addClass('cmd');
-			div.append(btn);
-			btn.on('click', onInputBtnClicked);
-			input.keydown(onInputBoxEnter);
+			console.log('btn2', btn)
+			if (k == 'raise') {
+				$('#raise-amount').text(raiseRangeText)
+				$('#raise-wrap').append(input);
+				$('#raise-wrap').append(btn);
+				input.on('change', function(e) {
+					$('#raise-amount').text(e.target.value)
+				});
+				btn.on('click', onInputBtnClicked);
+				// input.keydown(onInputBoxEnter);
+				$('#raise-wrap').append(btn);
+				// div.append(btn);
+			} else {		
+				btn.on('click', onInputBtnClicked);
+				input.keydown(onInputBoxEnter);
+				div.append(btn);
+			}
 			
 		} else if( Object.prototype.toString.call( v ) === '[object Array]' ) {
+			console.log('????', v)
 			div = $('<div>').attr('id',k).addClass('cmd');
 			$('#cmds').append(div);
 			for(var i=0; i<v.length; i++) {
 				var arg = v[i];
 				var t_arg = (typeof arg === 'string') ? _T(arg) : arg;
 				btn = $('<button>').text(_T(k)+' '+ t_arg).attr('id', k).attr('arg', arg).addClass('cmd');
+				console.log('btn3', btn)
 				div.append(btn);
+				$('#cmd2').append(btn);
 				btn.on('click', onBtnClicked);
+				//
 			}
 			
 		} else if( typeof v === 'object' ) {
@@ -505,7 +558,8 @@ function login(u, p) {
 			addMsg(ret.token.uid + ' (' + ret.profile.name + ') ' + _T('login success'));
 			
 			if(ret.cmds) {
-				updateCmds(ret.cmds);
+				console.log('CMDS2', ret)
+				updateCmds(ret.cmds, ret.call);
 				
 				if('entergame' in ret.cmds) {
 					list_games();
@@ -571,7 +625,10 @@ function echoReply(err, ret) {
 
 function parseReply(err, ret) {
 	if(err) addMsg(ret);
-	else if(ret.cmds) updateCmds(ret.cmds);
+	else if(ret.cmds) {
+		console.log('CMDS3', ret)
+		updateCmds(ret.cmds, ret.call);
+	}
 }
 
 function showRoom(room) {
@@ -725,7 +782,7 @@ Client.prototype.setUplink = function(socket) {
 		socket.rpc_callbacks = {};
 		
 		socket.on('notify', function( msg ){ // { uid:x, e:xx, args:xxx }
-			if(socket.log_traffic) console.log('notify', msg);
+			// if(socket.log_traffic) console.log('notify', msg);
 			
 			if(! msg) return;
 			if(typeof msg !== 'object') return;
@@ -801,6 +858,7 @@ Client.prototype.filterCmds = function(cmds) {
 };
 
 Client.prototype.onNotify = function(event, args) {
+	console.log('x', event, args)
 	switch(event) {
 	case 'prompt':
 		this.filterCmds(args);

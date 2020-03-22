@@ -2,7 +2,7 @@ exports = module.exports = {
 	server: {
 		port: 7000,
 		host: '0.0.0.0',
-		hellomsg: 'welcome to online casino',
+		hellomsg: 'The House',
 		server: 20141201,
 		client_req: 20141130
 	},
@@ -12,7 +12,7 @@ exports = module.exports = {
 		passwd: null
 	},
 	new_user : {
-		coins: 10000,
+		coins: 5000,
 		score: 0,
 		exp: 0,
 		level: 1
@@ -109,10 +109,10 @@ exports = module.exports = {
 				max_seats: 10,
 				no_joker: true,
 				no_number: [],
-				ready_countdown: 10,
-				turn_countdown: 20,
+				ready_countdown: 1,
+				turn_countdown: 10000000000,
 				limit_rule: 2,		// 0: limit, 1: pot limit, 2: no limit
-				limit: 100,			// big blind
+				limit: 50,			// big blind
 				limit_cap: -1,		// -1, means no limit
 			},
 			min: 2,
