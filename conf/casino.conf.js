@@ -109,7 +109,7 @@ exports = module.exports = {
 				max_seats: 10,
 				no_joker: true,
 				no_number: [],
-				ready_countdown: 1,
+				ready_countdown: 4,
 				turn_countdown: 10000000000,
 				limit_rule: 2,		// 0: limit, 1: pot limit, 2: no limit
 				limit: 50,			// big blind
