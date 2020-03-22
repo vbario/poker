@@ -1,6 +1,6 @@
 exports = module.exports = {
 	server: {
-		port: 80,
+		port: 7000,
 		host: '0.0.0.0',
 		hellomsg: 'The House',
 		server: 20141201,
